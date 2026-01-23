@@ -1,0 +1,19 @@
+Extract all biomarkers from this blood test report. Look for test names, numeric values, and units.
+
+## Blood Test Text
+{raw_text}
+
+## Instructions
+- Extract every biomarker/test result you can find
+- Include the exact value and unit as shown
+- Normalize test names (e.g., "HGB" becomes "hemoglobin")
+- If a unit is missing, make your best guess based on typical units
+
+## Response Format
+Respond with valid JSON only, no other text:
+{{
+  "biomarkers": [
+    {{"name": "hemoglobin", "value": 14.2, "unit": "g/dL"}},
+    {{"name": "glucose", "value": 95, "unit": "mg/dL"}}
+  ]
+}}

@@ -150,10 +150,17 @@ async def analyze_blood_test(pdf_bytes: bytes) -> AnalysisResult:
             recommendation=exp.get("recommendation")
         ))
     
+    # Extract concerns and ensure they're strings
+    concerns = analysis.get("concerns", [])
+    # Handle if LLM returned concerns as objects instead of strings
+    if concerns and isinstance(concerns[0], dict):
+        concerns = [c.get("name", str(c)) for c in concerns]
+
     return AnalysisResult(
         summary=analysis.get("summary", "Analysis complete. Review your results below."),
         biomarkers=final_biomarkers,
-        concerns=analysis.get("concerns", []),
-        recommendations=analysis.get("recommendations", [])
+        concerns=concerns,
+        recommendations=analysis.get("recommendations", []),
+        disclaimer="This analysis is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. Always consult with a qualified healthcare provider about any questions you may have regarding your health or medical results."
     )
 
