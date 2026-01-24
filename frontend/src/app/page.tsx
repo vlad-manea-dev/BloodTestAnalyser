@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import ResultsDisplay from "@/components/ResultsDisplay";
 
 export default function Home() {
   const [analysisResult, setAnalysisResult] = useState<any>(null);
@@ -22,13 +23,8 @@ export default function Home() {
         <Hero onAnalysisResult={handleAnalysisResult} />
         
         {analysisResult && (
-          <section id="results" className="px-8 py-12 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-xl shadow-blue-100/50 border border-blue-50">
-              <h2 className="text-3xl font-bold text-slate-900 mb-8">Analysis Results</h2>
-              <pre className="bg-slate-50 p-6 rounded-2xl overflow-auto max-h-[600px] text-sm text-slate-700">
-                {JSON.stringify(analysisResult, null, 2)}
-              </pre>
-            </div>
+          <section id="results" className="px-8 py-12 max-w-7xl mx-auto w-full">
+            <ResultsDisplay result={analysisResult} />
           </section>
         )}
       </main>
