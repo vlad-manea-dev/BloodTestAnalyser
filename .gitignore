@@ -79,4 +79,5 @@ htmlcov/
 dmypy.json
 
 # Pyre type checker
-.pyre/
+.pyre/\n# Gemini/Claude Session trackers and notes\nClaude.md\n*notes*
+Gemini.md
