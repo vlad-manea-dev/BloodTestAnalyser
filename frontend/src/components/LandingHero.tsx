@@ -12,7 +12,7 @@ const LandingHero = () => {
         </div>
         
         <h1 className="text-5xl md:text-6xl font-bold text-slate-900 leading-[1.1]">
-          Understand Your <span className="text-blue-600">Blood Test</span> Results Instantly
+          <span className="text-blue-600">BloodFlow</span>: The Intelligent Blood Test Analyser
         </h1>
         
         <p className="text-lg text-slate-600 max-w-lg leading-relaxed">

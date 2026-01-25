@@ -11,7 +11,7 @@ const Navbar = () => {
         <div className="bg-blue-600 p-1.5 rounded-lg text-white group-hover:scale-105 transition-transform">
           <Activity size={24} />
         </div>
-        <span className="text-xl font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">BloodTestAnalyser</span>
+        <span className="text-xl font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">BloodFlow</span>
       </Link>
       
       <div className="hidden md:flex items-center gap-8">
