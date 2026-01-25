@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import UploadForm from './UploadForm';
 
 interface HeroProps {
@@ -9,11 +10,6 @@ interface HeroProps {
 const Hero = ({ onAnalysisResult }: HeroProps) => {
   const scrollToAnalyze = () => {
     const element = document.getElementById('analyze');
-    element?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const scrollToLearnMore = () => {
-    const element = document.getElementById('learn-more');
     element?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -40,12 +36,12 @@ const Hero = ({ onAnalysisResult }: HeroProps) => {
           >
             Get Started <ArrowRight size={20} />
           </button>
-          <button 
-            onClick={scrollToLearnMore}
+          <Link 
+            href="/learn-more"
             className="px-8 py-4 rounded-full border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all"
           >
             Learn more
-          </button>
+          </Link>
         </div>
       </div>
 
