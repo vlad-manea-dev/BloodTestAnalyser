@@ -11,16 +11,16 @@ const Navbar = () => {
         <div className="bg-blue-600 p-1.5 rounded-lg text-white group-hover:scale-105 transition-transform">
           <Activity size={24} />
         </div>
-        <span className="text-xl font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">Medical</span>
+        <span className="text-xl font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">BloodTestAnalyser</span>
       </Link>
       
       <div className="hidden md:flex items-center gap-8">
         <Link href="/" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Home</Link>
-        <Link href="/about" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">About Us</Link>
+        <Link href="/about" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">About Me</Link>
       </div>
       
       <Link 
-        href="/"
+        href="/analyze"
         className="px-6 py-2.5 rounded-full border border-blue-600 text-blue-600 text-sm font-semibold hover:bg-blue-50 transition-all"
       >
         Analyze Now
