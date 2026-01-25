@@ -1,17 +1,44 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, FileText, CheckCircle2, Loader2, X } from 'lucide-react';
 
 interface UploadFormProps {
   onAnalysisResult: (result: any) => void;
 }
 
+const LOADING_MESSAGES = [
+  "Asking the AI if it's high cholesterol or just too much pizza...",
+  "Deciphering doctor handwriting... wait, this is a PDF...",
+  "Consulting with Dr. Llama...",
+  "Analyzing your platelets (they look cute)...",
+  "Running on a local laptop, please be patient...",
+  "Still faster than the waiting room...",
+  "Checking your white blood cells... they seem friendly.",
+  "Extracting biomarkers... beep boop.",
+  "Reading the fine print so you don't have to.",
+  "Almost there... just convincing the AI to hurry up."
+];
+
 const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMsg, setLoadingMsg] = useState(LOADING_MESSAGES[0]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isUploading) {
+      setLoadingMsg(LOADING_MESSAGES[0]);
+      let i = 1;
+      interval = setInterval(() => {
+        setLoadingMsg(LOADING_MESSAGES[i % LOADING_MESSAGES.length]);
+        i++;
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [isUploading]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -134,7 +161,7 @@ const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
       <button 
         disabled={!file || isUploading}
         onClick={handleSubmit}
-        className={`w-full mt-8 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+        className={`w-full mt-8 py-4 rounded-2xl font-bold transition-all flex flex-col items-center justify-center gap-2 ${
           !file || isUploading 
             ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
             : 'bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-200 active:scale-[0.98]'
@@ -142,8 +169,11 @@ const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
       >
         {isUploading ? (
           <>
-            <Loader2 size={20} className="animate-spin" />
-            Analyzing Report...
+            <div className="flex items-center gap-2">
+              <Loader2 size={20} className="animate-spin" />
+              <span>Analyzing Report...</span>
+            </div>
+            <span className="text-xs font-normal opacity-80 animate-pulse">{loadingMsg}</span>
           </>
         ) : (
           'Analyze Report'

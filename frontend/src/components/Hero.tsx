@@ -7,6 +7,16 @@ interface HeroProps {
 }
 
 const Hero = ({ onAnalysisResult }: HeroProps) => {
+  const scrollToAnalyze = () => {
+    const element = document.getElementById('analyze');
+    element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToLearnMore = () => {
+    const element = document.getElementById('learn-more');
+    element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <section className="px-8 py-12 max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center">
       <div className="flex flex-col gap-8">
@@ -16,39 +26,30 @@ const Hero = ({ onAnalysisResult }: HeroProps) => {
         </div>
         
         <h1 className="text-5xl md:text-6xl font-bold text-slate-900 leading-[1.1]">
-          One platform, <span className="text-blue-600">better insights</span> for every patient
+          Understand Your <span className="text-blue-600">Blood Test</span> Results Instantly
         </h1>
         
         <p className="text-lg text-slate-600 max-w-lg leading-relaxed">
-          From daily wellness to advanced health insights, our platform is designed to help you understand your blood reports instantly.
+          Upload your lab report PDF and get a clear, private AI explanation of every biomarker. No medical jargon, just simple insights.
         </p>
         
         <div className="flex flex-wrap gap-4">
-          <button className="px-8 py-4 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center gap-2">
+          <button 
+            onClick={scrollToAnalyze}
+            className="px-8 py-4 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center gap-2"
+          >
             Get Started <ArrowRight size={20} />
           </button>
-          <button className="px-8 py-4 rounded-full border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all">
+          <button 
+            onClick={scrollToLearnMore}
+            className="px-8 py-4 rounded-full border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-all"
+          >
             Learn more
           </button>
         </div>
-
-        <div className="flex items-center gap-4 mt-4">
-          <div className="flex -space-x-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
-                <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-                  {String.fromCharCode(64 + i)}
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-sm text-slate-500 font-medium">
-            Trusted by patients & healthcare teams worldwide.
-          </p>
-        </div>
       </div>
 
-      <div className="relative">
+      <div className="relative" id="analyze">
         <UploadForm onAnalysisResult={onAnalysisResult} />
 
         {/* Decorative Elements */}
