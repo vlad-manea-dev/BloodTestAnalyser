@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "llama3.2"  
-TIMEOUT = 120.0  
+TIMEOUT = 300.0  
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
@@ -37,6 +37,10 @@ async def query_ollama(prompt: str, json_output: bool = False) -> str:
         except httpx.ConnectError:
             raise ConnectionError(
                 "Cannot connect to Ollama. Make sure Ollama is running: `ollama serve`"
+            )
+        except httpx.TimeoutException:
+            raise RuntimeError(
+                "Ollama request timed out. The model is taking too long to respond."
             )
         except httpx.HTTPStatusError as e:
             raise RuntimeError(f"Ollama request failed: {e.response.text}")

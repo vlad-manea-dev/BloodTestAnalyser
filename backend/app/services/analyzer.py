@@ -83,8 +83,12 @@ async def analyze_blood_test(pdf_bytes: bytes) -> AnalysisResult:
     
     # Use LLM for additional extraction
     logger.info("Using LLM for comprehensive extraction...")
-    llm_biomarkers = await extract_biomarkers_llm(raw_text)
-    logger.info(f"LLM found {len(llm_biomarkers)} biomarkers")
+    try:
+        llm_biomarkers = await extract_biomarkers_llm(raw_text)
+        logger.info(f"LLM found {len(llm_biomarkers)} biomarkers")
+    except Exception as e:
+        logger.warning(f"LLM extraction failed or timed out: {e}. Proceeding with regex results only.")
+        llm_biomarkers = []
     
     # Merge results
     all_biomarkers = merge_biomarkers(regex_biomarkers, llm_biomarkers)
@@ -122,7 +126,16 @@ async def analyze_blood_test(pdf_bytes: bytes) -> AnalysisResult:
     
     # Step 4: Generate analysis via LLM
     logger.info("Generating analysis with LLM...")
-    analysis = await analyze_biomarkers(biomarkers_for_analysis)
+    try:
+        analysis = await analyze_biomarkers(biomarkers_for_analysis)
+    except Exception as e:
+        logger.error(f"LLM analysis failed or timed out: {e}")
+        analysis = {
+            "summary": "AI analysis could not be completed due to a service timeout. Please review the extracted biomarkers below.",
+            "biomarker_explanations": [],
+            "concerns": [],
+            "recommendations": ["Consult with a healthcare provider regarding your results."]
+        }
     
     # Step 5: Build final result
     explanation_map = {

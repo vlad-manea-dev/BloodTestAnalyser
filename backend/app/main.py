@@ -102,6 +102,8 @@ async def analyze_pdf(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=str(e))
     except ConnectionError as e:
         raise HTTPException(status_code=503, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         logger.exception("Unexpected error during analysis")
         raise HTTPException(
