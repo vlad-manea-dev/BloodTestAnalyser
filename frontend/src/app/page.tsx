@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Linkedin, Github, Cpu, Database, Shield } from 'lucide-react';
+import { Linkedin, Github, Cpu, Lock, Database } from 'lucide-react';
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import ResultsDisplay from "@/components/ResultsDisplay";
@@ -18,7 +18,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 selection:bg-blue-100 selection:text-blue-700 font-sans">
+    <div className="min-h-screen bg-white selection:bg-blue-50 selection:text-blue-900 font-sans text-slate-900">
       <Navbar />
       <main className="pb-24">
         <Hero onAnalysisResult={handleAnalysisResult} />
@@ -29,46 +29,44 @@ export default function Home() {
           </section>
         )}
 
-        {/* Learn More Section */}
-        <section id="learn-more" className="px-8 py-24 max-w-7xl mx-auto w-full">
-          <div className="bg-white rounded-[2.5rem] p-12 shadow-xl shadow-slate-200 border border-slate-100">
-            <h2 className="text-3xl font-bold text-slate-900 mb-12 text-center">How it works</h2>
-            <div className="grid md:grid-cols-3 gap-12">
-              <div className="flex flex-col items-center text-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-2">
-                  <Cpu size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-slate-800">Locally Run AI</h3>
-                <p className="text-slate-600 leading-relaxed">
-                  This project runs entirely on your local machine using <span className="font-semibold text-slate-900">Ollama</span>. No data leaves your laptop, ensuring complete privacy and speed.
-                </p>
-              </div>
-              
-              <div className="flex flex-col items-center text-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
-                  <Shield size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-slate-800">Private & Secure</h3>
-                <p className="text-slate-600 leading-relaxed">
-                  Your health data is sensitive. That's why we process everything locally. We don't store your reports on any external servers.
-                </p>
-              </div>
+        {/* Learn More / Privacy Section */}
+        <section id="learn-more" className="px-8 py-24 max-w-7xl mx-auto w-full border-t border-slate-100">
+          <div className="mb-16 text-center max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-4">Privacy & Security</h2>
+            <p className="text-lg text-slate-600">
+              Designed with strict medical data privacy standards. Your personal health information remains under your complete control.
+            </p>
+          </div>
 
-              <div className="flex flex-col items-center text-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-2">
-                  <Database size={32} />
-                </div>
-                <h3 className="text-xl font-bold text-slate-800">No Database</h3>
-                <p className="text-slate-600 leading-relaxed">
-                  This is a stateless application. There is no database attached, meaning your data disappears as soon as you close the session.
-                </p>
-              </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="p-8 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-lg transition-all duration-300 group">
+              <Cpu className="w-10 h-10 text-slate-400 group-hover:text-blue-600 mb-6 transition-colors" strokeWidth={1.5} />
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Local Processing</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Analysis is performed entirely on your device using Ollama. No data is ever sent to the cloud.
+              </p>
+            </div>
+            
+            <div className="p-8 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-lg transition-all duration-300 group">
+              <Lock className="w-10 h-10 text-slate-400 group-hover:text-blue-600 mb-6 transition-colors" strokeWidth={1.5} />
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Zero Data Retention</h3>
+              <p className="text-slate-600 leading-relaxed">
+                We operate on a strict no-logs policy. Once you close your browser, your session data is permanently erased.
+              </p>
+            </div>
+
+            <div className="p-8 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-lg transition-all duration-300 group">
+              <Database className="w-10 h-10 text-slate-400 group-hover:text-blue-600 mb-6 transition-colors" strokeWidth={1.5} />
+              <h3 className="text-xl font-bold text-slate-900 mb-3">Stateless Architecture</h3>
+              <p className="text-slate-600 leading-relaxed">
+                No database. No persistent storage. Your report is analyzed in memory and discarded immediately after.
+              </p>
             </div>
           </div>
         </section>
 
         {/* About Us Section */}
-        <section id="about" className="px-8 py-16 max-w-7xl mx-auto w-full text-center">
+        <section id="about" className="px-8 py-16 max-w-7xl mx-auto w-full text-center border-t border-slate-100">
           <h2 className="text-2xl font-bold text-slate-900 mb-8">About the Developer</h2>
           <div className="flex justify-center gap-6">
             <a 
@@ -94,9 +92,8 @@ export default function Home() {
       </main>
       
       {/* Background decoration */}
-      <div className="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-50 rounded-full blur-[120px] opacity-50"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-50 rounded-full blur-[120px] opacity-50"></div>
+      <div className="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none overflow-hidden bg-slate-50/50">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-100/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
       </div>
     </div>
   );
