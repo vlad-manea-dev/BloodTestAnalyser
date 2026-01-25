@@ -21,7 +21,7 @@ const LandingHero = () => {
         
         <div className="flex flex-wrap gap-4">
           <Link 
-            href="/analyze"
+            href="/analyse"
             className="px-8 py-4 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center gap-2"
           >
             Get Started <ArrowRight size={20} />

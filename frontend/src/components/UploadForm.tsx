@@ -11,7 +11,7 @@ const LOADING_MESSAGES = [
   "Asking the AI if it's high cholesterol or just too much pizza...",
   "Deciphering doctor handwriting... wait, this is a PDF...",
   "Consulting with Dr. Llama...",
-  "Analyzing your platelets (they look cute)...",
+  "Analysing your platelets (they look cute)...",
   "Running on a local laptop, please be patient...",
   "Still faster than the waiting room...",
   "Checking your white blood cells... they seem friendly.",
@@ -86,6 +86,7 @@ const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
     formData.append('file', file);
 
     try {
+      // Keep backend endpoint as /analyze unless we refactor backend
       const response = await fetch('http://localhost:8000/analyze', {
         method: 'POST',
         body: formData,
@@ -171,14 +172,20 @@ const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
           <>
             <div className="flex items-center gap-2">
               <Loader2 size={20} className="animate-spin" />
-              <span>Analyzing Report...</span>
+              <span>Analysing Report...</span>
             </div>
             <span className="text-xs font-normal opacity-80 animate-pulse">{loadingMsg}</span>
           </>
         ) : (
-          'Analyze Report'
+          'Analyse Report'
         )}
       </button>
+      
+      {isUploading && (
+         <p className="mt-4 text-center text-xs text-slate-500 animate-pulse">
+           Note: Detailed AI analysis runs locally and may take up to 3-5 minutes.
+         </p>
+      )}
 
       {!file && !isUploading && (
         <div className="mt-8 space-y-4 opacity-40 select-none pointer-events-none">

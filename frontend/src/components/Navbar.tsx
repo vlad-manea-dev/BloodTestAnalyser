@@ -20,10 +20,10 @@ const Navbar = () => {
       </div>
       
       <Link 
-        href="/analyze"
+        href="/analyse"
         className="px-6 py-2.5 rounded-full border border-blue-600 text-blue-600 text-sm font-semibold hover:bg-blue-50 transition-all"
       >
-        Analyze Now
+        Analyse Now
       </Link>
     </nav>
   );
