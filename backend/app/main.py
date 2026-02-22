@@ -1,14 +1,18 @@
 """Blood Test Summariser API - Main FastAPI Application."""
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.models import AnalysisResult
 from app.services.analyzer import analyze_blood_test
-from app.services.llm_service import check_ollama_connection
+from app.services.llm_service import check_llm_connection
+
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -21,17 +25,14 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
-    # Startup: Check Ollama connection
-    logger.info("Checking Ollama connection...")
-    if await check_ollama_connection():
-        logger.info("✓ Ollama is running and model is available")
+    logger.info("Checking LLM connection...")
+    if await check_llm_connection():
+        logger.info("✓ Groq API is reachable and ready")
     else:
         logger.warning(
-            "⚠ Ollama not detected. Make sure to run: "
-            "1) `ollama serve` and 2) `ollama pull llama3.2:8b`"
+            "⚠ Groq API not reachable. Make sure GROQ_API_KEY is set."
         )
     yield
-    # Shutdown: cleanup if needed
     logger.info("Shutting down...")
 
 
@@ -43,9 +44,17 @@ app = FastAPI(
 )
 
 # CORS for frontend
+cors_origins = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else []
+cors_origins += [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite/React dev servers
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -55,10 +64,10 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    ollama_ok = await check_ollama_connection()
+    llm_ok = await check_llm_connection()
     return {
         "status": "healthy",
-        "ollama_connected": ollama_ok
+        "llm_connected": llm_ok
     }
 
 
@@ -66,7 +75,7 @@ async def health_check():
 async def analyze_pdf(file: UploadFile = File(...)):
     """
     Upload a blood test PDF and receive a comprehensive analysis.
-    
+
     Returns biomarker values, status (normal/high/low), explanations,
     and health recommendations.
     """
@@ -76,7 +85,7 @@ async def analyze_pdf(file: UploadFile = File(...)):
             status_code=400,
             detail="Only PDF files are supported"
         )
-    
+
     # Validate file size (max 10MB)
     contents = await file.read()
     if len(contents) > 10 * 1024 * 1024:
@@ -84,20 +93,20 @@ async def analyze_pdf(file: UploadFile = File(...)):
             status_code=400,
             detail="File too large. Maximum size is 10MB"
         )
-    
-    # Check Ollama is available
-    if not await check_ollama_connection():
+
+    # Check LLM is available
+    if not await check_llm_connection():
         raise HTTPException(
             status_code=503,
-            detail="LLM service unavailable. Please ensure Ollama is running."
+            detail="LLM service unavailable. Please check the GROQ_API_KEY configuration."
         )
-    
+
     try:
         logger.info(f"Processing file: {file.filename}")
         result = await analyze_blood_test(contents)
         logger.info("Analysis complete")
         return result
-    
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except ConnectionError as e:

@@ -4,16 +4,21 @@ Extract all biomarkers from this blood test report. Look for test names, numeric
 {raw_text}
 
 ## Instructions
+- If the blood test report is in a language other than English, translate all test names and information into English before extracting.
 - Extract every biomarker/test result you can find
 - Include the exact value and unit as shown
 - Normalize test names (e.g., "HGB" becomes "hemoglobin")
 - If a unit is missing, make your best guess based on typical units
+- Do not include biomarkers or information that doesn't exist in the report
+- Extract the reference ranges if they are found
+-Extract the gender and age of the user
 
 ## Response Format
 Respond with valid JSON only, no other text:
 {{
   "biomarkers": [
-    {{"name": "hemoglobin", "value": 14.2, "unit": "g/dL"}},
-    {{"name": "glucose", "value": 95, "unit": "mg/dL"}}
+    {{"name": "hemoglobin", "value": 14.2, "unit": "g/dL", "reference_range": [14, 15]}},
+    {{"name": "glucose", "value": 95, "unit": "mg/dL", "reference_range": [95.0, 96.8] }}
+
   ]
 }}

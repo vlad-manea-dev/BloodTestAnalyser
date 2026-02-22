@@ -7,12 +7,14 @@ interface UploadFormProps {
   onAnalysisResult: (result: any) => void;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
 const LOADING_MESSAGES = [
   "Asking the AI if it's high cholesterol or just too much pizza...",
   "Deciphering doctor handwriting... wait, this is a PDF...",
   "Consulting with Dr. Llama...",
   "Analysing your platelets (they look cute)...",
-  "Running on a local laptop, please be patient...",
+  "Crunching the numbers...",
   "Still faster than the waiting room...",
   "Checking your white blood cells... they seem friendly.",
   "Extracting biomarkers... beep boop.",
@@ -86,8 +88,7 @@ const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
     formData.append('file', file);
 
     try {
-      // Keep backend endpoint as /analyze unless we refactor backend
-      const response = await fetch('http://localhost:8000/analyze', {
+      const response = await fetch(`${API_URL}/analyze`, {
         method: 'POST',
         body: formData,
       });
@@ -183,7 +184,7 @@ const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
       
       {isUploading && (
          <p className="mt-4 text-center text-xs text-slate-500 animate-pulse">
-           Note: Detailed AI analysis runs locally and may take up to 3-5 minutes.
+           Note: Detailed AI analysis may take up to a minute.
          </p>
       )}
 

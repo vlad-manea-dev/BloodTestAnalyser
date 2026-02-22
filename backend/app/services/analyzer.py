@@ -1,6 +1,7 @@
 import json
 import logging
 from pathlib import Path
+from rapidfuzz import process, utils, fuzz
 
 from app.models import (
     AnalysisResult,
@@ -8,40 +9,73 @@ from app.models import (
     BiomarkerStatus,
     ExtractedBiomarker,
 )
-from app.services.pdf_parser import extract_text_from_pdf, extract_biomarkers_regex
+from app.services.pdf_parser import extract_text_from_pdf, extract_biomarkers_regex, normalize_unit
 from app.services.llm_service import extract_biomarkers_llm, analyze_biomarkers
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+ENABLE_REGEX_EXTRACTION = os.getenv("ENABLE_REGEX_EXTRACTION", "false").lower() == "true"
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 REFERENCE_RANGES = json.loads((DATA_DIR / "reference_ranges.json").read_text())
 
-def find_reference_range(biomarker_name: str) -> dict | None:
-    name_lower = biomarker_name.lower().strip()
-    
-    # Direct match
-    if name_lower in REFERENCE_RANGES:
-        ref = REFERENCE_RANGES[name_lower]
-        ranges = ref["ranges"].get("default", list(ref["ranges"].values())[0])
-        return {
-            "low": ranges["low"],
-            "high": ranges["high"],
-            "unit": ref["unit"],
-            "description": ref["description"]
-        }
-    
-    # Check aliases
+# Pre-compute search map for faster lookups and better fuzzy matching
+def _build_search_map():
+    mapping = {}
     for key, ref in REFERENCE_RANGES.items():
-        if name_lower in [a.lower() for a in ref.get("aliases", [])]:
-            ranges = ref["ranges"].get("default", list(ref["ranges"].values())[0])
-            return {
-                "low": ranges["low"],
-                "high": ranges["high"],
-                "unit": ref["unit"],
-                "description": ref["description"]
-            }
+        # Clean the primary key
+        clean_key = utils.default_process(key)
+        if clean_key:
+            mapping[clean_key] = key
+        
+        # Clean and add all aliases
+        for alias in ref.get("aliases", []):
+            clean_alias = utils.default_process(alias)
+            if clean_alias:
+                mapping[clean_alias] = key
+    return mapping
+
+SEARCH_MAP = _build_search_map()
+SEARCH_CHOICES = list(SEARCH_MAP.keys())
+
+def find_reference_range(biomarker_name: str) -> dict | None:
+    name_clean = utils.default_process(biomarker_name)
+    if not name_clean:
+        return None
+
+    # 1. Direct match on processed names for speed
+    if name_clean in SEARCH_MAP:
+        return _get_ref_data(SEARCH_MAP[name_clean])
+
+    # 2. Fuzzy match using WRatio (better for varying word orders and partial matches)
+    match = process.extractOne(
+        name_clean, 
+        SEARCH_CHOICES, 
+        scorer=fuzz.WRatio, 
+        score_cutoff=85
+    )
     
+    if match:
+        best_match_key, score, _ = match
+        original_key = SEARCH_MAP[best_match_key]
+        logger.info(f"Fuzzy matched '{biomarker_name}' to '{original_key}' (score: {score:.1f})")
+        return _get_ref_data(original_key)
+
     return None
+
+def _get_ref_data(key: str) -> dict:
+    ref = REFERENCE_RANGES[key]
+    ranges = ref["ranges"].get("default", list(ref["ranges"].values())[0])
+    return {
+        "low": ranges["low"],
+        "high": ranges["high"],
+        "unit": ref["unit"],
+        "description": ref["description"]
+    }
 
 def determine_status(value: float, ref_low: float, ref_high: float) -> BiomarkerStatus:
     if value < ref_low:
@@ -51,13 +85,29 @@ def determine_status(value: float, ref_low: float, ref_high: float) -> Biomarker
     return BiomarkerStatus.NORMAL
 
 def merge_biomarkers(regex_results: list[ExtractedBiomarker], llm_results: list[ExtractedBiomarker]) -> list[ExtractedBiomarker]:
-    seen_names = {b.name.lower() for b in regex_results}
     merged = list(regex_results)
     
-    for biomarker in llm_results:
-        if biomarker.name.lower() not in seen_names:
-            merged.append(biomarker)
-            seen_names.add(biomarker.name.lower())
+    for llm_b in llm_results:
+        llm_name_clean = utils.default_process(llm_b.name)
+        if not llm_name_clean:
+            continue
+            
+        # Check for fuzzy match in already merged biomarkers
+        is_duplicate = False
+        for existing_b in merged:
+            existing_name_clean = utils.default_process(existing_b.name)
+            if existing_name_clean == llm_name_clean:
+                is_duplicate = True
+                break
+            
+            # Fuzzy check for very similar names
+            score = fuzz.ratio(existing_name_clean, llm_name_clean)
+            if score >= 90:
+                is_duplicate = True
+                break
+        
+        if not is_duplicate:
+            merged.append(llm_b)
     
     return merged
 
@@ -77,14 +127,21 @@ async def analyze_blood_test(pdf_bytes: bytes) -> AnalysisResult:
         raise ValueError("Could not extract text from PDF. The file may be image-based or corrupted.")
     
     # Step 2: Extract biomarkers
-    logger.info("Extracting biomarkers with regex...")
-    regex_biomarkers = extract_biomarkers_regex(raw_text)
-    logger.info(f"Regex found {len(regex_biomarkers)} biomarkers")
+    if ENABLE_REGEX_EXTRACTION:
+        logger.info("Extracting biomarkers with regex...")
+        regex_biomarkers = extract_biomarkers_regex(raw_text)
+        logger.info(f"Regex found {len(regex_biomarkers)} biomarkers")
+    else:
+        logger.info("Regex extraction disabled, skipping...")
+        regex_biomarkers = []
     
     # Use LLM for additional extraction
     logger.info("Using LLM for comprehensive extraction...")
     try:
         llm_biomarkers = await extract_biomarkers_llm(raw_text)
+        # Normalize units for LLM results
+        for b in llm_biomarkers:
+            b.unit = normalize_unit(b.unit)
         logger.info(f"LLM found {len(llm_biomarkers)} biomarkers")
     except Exception as e:
         logger.warning(f"LLM extraction failed or timed out: {e}. Proceeding with regex results only.")
@@ -102,11 +159,18 @@ async def analyze_blood_test(pdf_bytes: bytes) -> AnalysisResult:
     for biomarker in all_biomarkers:
         ref = find_reference_range(biomarker.name)
         if ref:
-            status = determine_status(biomarker.value, ref["low"], ref["high"])
+            value = biomarker.value
+            # Basic unit conversion (e.g., g/L to g/dL for hemoglobin/protein)
+            if biomarker.unit == "g/L" and ref["unit"] == "g/dL":
+                value = value / 10.0
+            elif biomarker.unit == "g/dL" and ref["unit"] == "g/L":
+                value = value * 10.0
+                
+            status = determine_status(value, ref["low"], ref["high"])
             biomarkers_for_analysis.append({
                 "name": biomarker.name,
-                "value": biomarker.value,
-                "unit": biomarker.unit,
+                "value": value,
+                "unit": ref["unit"],
                 "reference_low": ref["low"],
                 "reference_high": ref["high"],
                 "status": status.value,
@@ -138,14 +202,25 @@ async def analyze_blood_test(pdf_bytes: bytes) -> AnalysisResult:
         }
     
     # Step 5: Build final result
-    explanation_map = {
-        exp["name"].lower(): exp 
-        for exp in analysis.get("biomarker_explanations", [])
-    }
+    # Use fuzzy matching to map explanations back to biomarkers
+    explanation_list = analysis.get("biomarker_explanations", [])
+    explanation_names = [utils.default_process(exp["name"]) for exp in explanation_list]
     
     final_biomarkers = []
     for b in biomarkers_for_analysis:
-        exp = explanation_map.get(b["name"].lower(), {})
+        b_name_clean = utils.default_process(b["name"])
+        exp = {}
+        
+        # Try exact match first
+        if b_name_clean in explanation_names:
+            idx = explanation_names.index(b_name_clean)
+            exp = explanation_list[idx]
+        else:
+            # Fuzzy match
+            match = process.extractOne(b_name_clean, explanation_names, score_cutoff=85)
+            if match:
+                _, _, idx = match
+                exp = explanation_list[idx]
         
         # Handle unknown reference ranges
         ref_low = b["reference_low"] if b["reference_low"] is not None else 0

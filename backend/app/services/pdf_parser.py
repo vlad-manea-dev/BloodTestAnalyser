@@ -69,6 +69,7 @@ def extract_biomarkers_regex(text: str) -> list[ExtractedBiomarker]:
             value_str, unit = match.groups()
             try:
                 value = float(value_str)
+                unit = normalize_unit(unit)
                 biomarkers.append(ExtractedBiomarker(name=name, value=value, unit=unit))
             except ValueError:
                 continue
@@ -77,13 +78,29 @@ def extract_biomarkers_regex(text: str) -> list[ExtractedBiomarker]:
 
 
 def normalize_unit(unit: str) -> str:
+    if not unit:
+        return ""
+    
+    unit = unit.lower().strip()
+    
     unit_map = {
-        "g/l": "g/dL",  # Convert if needed
+        "g/l": "g/dL",
+        "mmol/l": "mmol/L",
+        "umol/l": "umol/L",
+        "mg/dl": "mg/dL",
+        "mmeq/l": "mEq/L",
+        "meq/l": "mEq/L",
+        "u/l": "U/L",
+        "iu/l": "U/L",
         "k/ul": "x10^9/L",
         "thou/ul": "x10^9/L",
         "m/ul": "x10^12/L",
         "mil/ul": "x10^12/L",
         "uiu/ml": "mIU/L",
-        "iu/l": "U/L",
+        "miu/l": "mIU/L",
+        "ng/ml": "ng/mL",
+        "ug/dl": "mcg/dL",
+        "mcg/dl": "mcg/dL",
+        "pg/ml": "pg/mL",
     }
-    return unit_map.get(unit.lower(), unit)
+    return unit_map.get(unit, unit)
