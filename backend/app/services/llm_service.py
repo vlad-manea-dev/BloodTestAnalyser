@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # Configurable Groq settings
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.2-3b-preview")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 GROQ_TIMEOUT = float(os.getenv("GROQ_TIMEOUT", "60.0"))
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
