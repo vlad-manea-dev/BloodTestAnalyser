@@ -95,13 +95,6 @@ async def analyze_pdf(file: UploadFile = File(...)):
             detail="File too large. Maximum size is 10MB"
         )
 
-    # Check LLM is available
-    if not await check_llm_connection():
-        raise HTTPException(
-            status_code=503,
-            detail="LLM service unavailable. Please check the GROQ_API_KEY configuration."
-        )
-
     try:
         logger.info(f"Processing file: {file.filename}")
         result = await analyze_blood_test(contents)
