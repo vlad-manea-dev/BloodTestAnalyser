@@ -9,8 +9,8 @@ from app.models import (
     BiomarkerStatus,
     ExtractedBiomarker,
 )
-from app.services.pdf_parser import extract_text_from_pdf, extract_biomarkers_regex, normalize_unit
-from app.services.llm_service import extract_biomarkers_llm, analyze_biomarkers
+from app.services.pdf_parser import extract_text_from_pdf, extract_biomarkers_regex, normalize_unit, is_text_empty, render_pages_as_images
+from app.services.llm_service import extract_biomarkers_llm, analyze_biomarkers, ocr_page_image
 import os
 from dotenv import load_dotenv
 
@@ -122,7 +122,19 @@ async def analyze_blood_test(pdf_bytes: bytes) -> AnalysisResult:
     # Step 1: Extract text
     logger.info("Extracting text from PDF...")
     raw_text = extract_text_from_pdf(pdf_bytes)
-    
+
+    # If no text found, use vision OCR for scanned/image-based PDFs
+    if not raw_text.strip():
+        logger.info("No text found, using vision OCR for scanned PDF...")
+        page_images = render_pages_as_images(pdf_bytes)
+        ocr_parts = []
+        for i, img in enumerate(page_images):
+            logger.info(f"OCR processing page {i + 1}/{len(page_images)}...")
+            page_text = await ocr_page_image(img)
+            if page_text:
+                ocr_parts.append(page_text)
+        raw_text = "\n".join(ocr_parts)
+
     if not raw_text.strip():
         raise ValueError("Could not extract text from PDF. The file may be image-based or corrupted.")
     

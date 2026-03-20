@@ -5,25 +5,37 @@ from app.models import ExtractedBiomarker
 
 logger = logging.getLogger(__name__)
 
+
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-
-    # Try normal text extraction first
     text = ""
     for page in doc:
         text += page.get_text()
-
-    # If no text found, fall back to OCR (for scanned/image-based PDFs)
-    if not text.strip():
-        logger.info("No text found via direct extraction, falling back to OCR...")
-        text = ""
-        for page in doc:
-            tp = page.get_textpage_ocr(flags=0, language="eng", dpi=300)
-            text += page.get_text(textpage=tp)
-        logger.info(f"OCR extracted {len(text)} characters")
-
     doc.close()
     return text
+
+
+def is_text_empty(pdf_bytes: bytes) -> bool:
+    """Check if PDF has no extractable text (likely scanned/image-based)."""
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    doc.close()
+    return not text.strip()
+
+
+def render_pages_as_images(pdf_bytes: bytes, dpi: int = 200) -> list[bytes]:
+    """Render each PDF page as a PNG image."""
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    images = []
+    zoom = dpi / 72
+    matrix = fitz.Matrix(zoom, zoom)
+    for page in doc:
+        pix = page.get_pixmap(matrix=matrix)
+        images.append(pix.tobytes("png"))
+    doc.close()
+    return images
 
 def extract_biomarkers_regex(text: str) -> list[ExtractedBiomarker]:
     biomarkers = []
