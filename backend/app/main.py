@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.models import AnalysisResult
 from app.services.analyzer import analyze_blood_test
+from app.services.llm_service import check_llm_connection
 
 load_dotenv()
 
