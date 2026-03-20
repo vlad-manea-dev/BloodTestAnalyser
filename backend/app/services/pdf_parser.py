@@ -1,12 +1,27 @@
+import logging
 import fitz
-import re 
+import re
 from app.models import ExtractedBiomarker
+
+logger = logging.getLogger(__name__)
 
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+
+    # Try normal text extraction first
     text = ""
     for page in doc:
         text += page.get_text()
+
+    # If no text found, fall back to OCR (for scanned/image-based PDFs)
+    if not text.strip():
+        logger.info("No text found via direct extraction, falling back to OCR...")
+        text = ""
+        for page in doc:
+            tp = page.get_textpage_ocr(flags=0, language="eng", dpi=300)
+            text += page.get_text(textpage=tp)
+        logger.info(f"OCR extracted {len(text)} characters")
+
     doc.close()
     return text
 
