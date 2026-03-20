@@ -7,14 +7,12 @@ interface UploadFormProps {
   onAnalysisResult: (result: any) => void;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
 const LOADING_MESSAGES = [
   "Asking the AI if it's high cholesterol or just too much pizza...",
   "Deciphering doctor handwriting... wait, this is a PDF...",
   "Consulting with Dr. Llama...",
   "Analysing your platelets (they look cute)...",
-  "Crunching the numbers...",
+  "Running on a local laptop, please be patient...",
   "Still faster than the waiting room...",
   "Checking your white blood cells... they seem friendly.",
   "Extracting biomarkers... beep boop.",
@@ -49,6 +47,10 @@ const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
         setError('Please upload a PDF file.');
         return;
       }
+      if (selectedFile.size > 20 * 1024 * 1024) {
+        setError('File too large. Maximum size is 20MB.');
+        return;
+      }
       setFile(selectedFile);
       setError(null);
     }
@@ -66,6 +68,10 @@ const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
       const selectedFile = e.dataTransfer.files[0];
       if (selectedFile.type !== 'application/pdf') {
         setError('Please upload a PDF file.');
+        return;
+      }
+      if (selectedFile.size > 20 * 1024 * 1024) {
+        setError('File too large. Maximum size is 20MB.');
         return;
       }
       setFile(selectedFile);
@@ -88,13 +94,19 @@ const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
     formData.append('file', file);
 
     try {
-      const response = await fetch(`${API_URL}/analyze`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(`${apiUrl}/analyze`, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Analysis failed. Please try again.');
+        let detail = 'Analysis failed. Please try again.';
+        try {
+          const body = await response.json();
+          if (body.detail) detail = body.detail;
+        } catch {}
+        throw new Error(detail);
       }
 
       const result = await response.json();
@@ -184,7 +196,7 @@ const UploadForm = ({ onAnalysisResult }: UploadFormProps) => {
       
       {isUploading && (
          <p className="mt-4 text-center text-xs text-slate-500 animate-pulse">
-           Note: Detailed AI analysis may take up to a minute.
+           Note: Detailed AI analysis runs locally and may take up to 3-5 minutes.
          </p>
       )}
 

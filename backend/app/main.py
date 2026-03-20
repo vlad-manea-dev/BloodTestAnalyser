@@ -95,11 +95,11 @@ async def analyze_pdf(file: UploadFile = File(...)):
             detail="Uploaded file is empty"
         )
 
-    # Validate file size (max 10MB)
-    if len(contents) > 10 * 1024 * 1024:
+    # Validate file size (max 20MB)
+    if len(contents) > 20 * 1024 * 1024:
         raise HTTPException(
             status_code=400,
-            detail="File too large. Maximum size is 10MB"
+            detail="File too large. Maximum size is 20MB"
         )
 
     try:
