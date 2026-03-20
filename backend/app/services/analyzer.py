@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from pathlib import Path
@@ -126,14 +127,12 @@ async def analyze_blood_test(pdf_bytes: bytes) -> AnalysisResult:
     # If no text found, use vision OCR for scanned/image-based PDFs
     if not raw_text.strip():
         logger.info("No text found, using vision OCR for scanned PDF...")
-        page_images = render_pages_as_images(pdf_bytes)
-        ocr_parts = []
-        for i, img in enumerate(page_images):
-            logger.info(f"OCR processing page {i + 1}/{len(page_images)}...")
-            page_text = await ocr_page_image(img)
-            if page_text:
-                ocr_parts.append(page_text)
-        raw_text = "\n".join(ocr_parts)
+        page_images = render_pages_as_images(pdf_bytes, dpi=150)
+        max_pages = min(len(page_images), 5)  # Cap at 5 pages to stay within timeout
+        logger.info(f"OCR processing {max_pages} of {len(page_images)} pages in parallel...")
+        tasks = [ocr_page_image(page_images[i]) for i in range(max_pages)]
+        results = await asyncio.gather(*tasks)
+        raw_text = "\n".join(r for r in results if r)
 
     if not raw_text.strip():
         raise ValueError("Could not extract text from PDF. The file may be image-based or corrupted.")
