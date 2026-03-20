@@ -10,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.models import AnalysisResult
 from app.services.analyzer import analyze_blood_test
-from app.services.llm_service import check_llm_connection
 
 load_dotenv()
 
@@ -25,13 +24,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
-    logger.info("Checking LLM connection...")
-    if await check_llm_connection():
-        logger.info("✓ Groq API is reachable and ready")
-    else:
-        logger.warning(
-            "⚠ Groq API not reachable. Make sure GROQ_API_KEY is set."
-        )
+    logger.info("Server starting up...")
     yield
     logger.info("Shutting down...")
 
