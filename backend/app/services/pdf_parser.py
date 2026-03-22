@@ -25,17 +25,23 @@ def is_text_empty(pdf_bytes: bytes) -> bool:
     return not text.strip()
 
 
-def render_pages_as_images(pdf_bytes: bytes, dpi: int = 200) -> list[bytes]:
-    """Render each PDF page as a PNG image."""
+def render_page_as_image(pdf_bytes: bytes, page_num: int, dpi: int = 150) -> bytes:
+    """Render a single PDF page as a PNG image."""
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    images = []
     zoom = dpi / 72
     matrix = fitz.Matrix(zoom, zoom)
-    for page in doc:
-        pix = page.get_pixmap(matrix=matrix)
-        images.append(pix.tobytes("png"))
+    page = doc[page_num]
+    pix = page.get_pixmap(matrix=matrix)
+    img = pix.tobytes("png")
     doc.close()
-    return images
+    return img
+
+
+def get_page_count(pdf_bytes: bytes) -> int:
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    count = len(doc)
+    doc.close()
+    return count
 
 def extract_biomarkers_regex(text: str) -> list[ExtractedBiomarker]:
     biomarkers = []

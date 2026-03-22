@@ -10,7 +10,7 @@ from app.models import (
     BiomarkerStatus,
     ExtractedBiomarker,
 )
-from app.services.pdf_parser import extract_text_from_pdf, extract_biomarkers_regex, normalize_unit, is_text_empty, render_pages_as_images
+from app.services.pdf_parser import extract_text_from_pdf, extract_biomarkers_regex, normalize_unit, render_page_as_image, get_page_count
 from app.services.llm_service import extract_biomarkers_llm, analyze_biomarkers, ocr_page_image
 import os
 from dotenv import load_dotenv
@@ -127,12 +127,18 @@ async def analyze_blood_test(pdf_bytes: bytes) -> AnalysisResult:
     # If no text found, use vision OCR for scanned/image-based PDFs
     if not raw_text.strip():
         logger.info("No text found, using vision OCR for scanned PDF...")
-        page_images = render_pages_as_images(pdf_bytes, dpi=150)
-        max_pages = min(len(page_images), 5)  # Cap at 5 pages to stay within timeout
-        logger.info(f"OCR processing {max_pages} of {len(page_images)} pages in parallel...")
-        tasks = [ocr_page_image(page_images[i]) for i in range(max_pages)]
-        results = await asyncio.gather(*tasks)
-        raw_text = "\n".join(r for r in results if r)
+        total_pages = get_page_count(pdf_bytes)
+        max_pages = min(total_pages, 5)
+        logger.info(f"OCR processing {max_pages} of {total_pages} pages...")
+        ocr_parts = []
+        for i in range(max_pages):
+            logger.info(f"OCR processing page {i + 1}/{max_pages}...")
+            img = render_page_as_image(pdf_bytes, i, dpi=150)
+            page_text = await ocr_page_image(img)
+            if page_text:
+                ocr_parts.append(page_text)
+            del img  # Free memory immediately
+        raw_text = "\n".join(ocr_parts)
 
     if not raw_text.strip():
         raise ValueError("Could not extract text from PDF. The file may be image-based or corrupted.")
