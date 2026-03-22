@@ -114,9 +114,10 @@ async def analyze_biomarkers(biomarkers_for_analysis: list[dict]) -> dict:
 
 
 async def ocr_page_image(image_bytes: bytes) -> str:
-    """Use Gemini vision to OCR a single page image."""
+    """Use Gemini vision to OCR a single page image, with retry for rate limits."""
+    import asyncio
     b64 = base64.b64encode(image_bytes).decode("utf-8")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={GEMINI_API_KEY}"
     payload = {
         "contents": [
             {
@@ -124,7 +125,7 @@ async def ocr_page_image(image_bytes: bytes) -> str:
                     {"text": "Extract ALL text from this blood test report image exactly as it appears. Include all biomarker names, values, units, and reference ranges. Return only the extracted text, nothing else."},
                     {
                         "inline_data": {
-                            "mime_type": "image/png",
+                            "mime_type": "image/jpeg",
                             "data": b64,
                         }
                     },
@@ -134,13 +135,21 @@ async def ocr_page_image(image_bytes: bytes) -> str:
     }
 
     async with httpx.AsyncClient(timeout=GROQ_TIMEOUT) as client:
-        try:
-            response = await client.post(url, json=payload)
-            response.raise_for_status()
-            return response.json()["candidates"][0]["content"]["parts"][0]["text"]
-        except Exception as e:
-            logger.error(f"Gemini Vision OCR failed for page: {e}")
-            return ""
+        for attempt in range(3):
+            try:
+                response = await client.post(url, json=payload)
+                if response.status_code == 429:
+                    wait = 2 ** attempt * 5  # 5s, 10s, 20s
+                    logger.warning(f"Gemini rate limited, retrying in {wait}s...")
+                    await asyncio.sleep(wait)
+                    continue
+                response.raise_for_status()
+                return response.json()["candidates"][0]["content"]["parts"][0]["text"]
+            except Exception as e:
+                logger.error(f"Gemini Vision OCR failed for page (attempt {attempt + 1}): {e}")
+                if attempt < 2:
+                    await asyncio.sleep(2 ** attempt * 5)
+        return ""
 
 
 async def check_llm_connection() -> bool:

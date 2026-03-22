@@ -25,17 +25,24 @@ def is_text_empty(pdf_bytes: bytes) -> bool:
     return not text.strip()
 
 
-def render_page_as_image(pdf_bytes: bytes, page_num: int, dpi: int = 150) -> bytes:
-    """Render a single PDF page as a PNG image."""
+def render_page_as_image(pdf_bytes: bytes, page_num: int, dpi: int = 72) -> bytes:
+    """Render a single PDF page as a JPEG image."""
+    import io
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     zoom = dpi / 72
     matrix = fitz.Matrix(zoom, zoom)
     page = doc[page_num]
     pix = page.get_pixmap(matrix=matrix)
-    img = pix.tobytes("png")
-    logger.info(f"Page {page_num} image size: {len(img) / 1024:.0f} KB")
+    # Convert to JPEG to reduce size
+    raw = pix.tobytes("png")
     doc.close()
-    return img
+    from PIL import Image
+    img = Image.open(io.BytesIO(raw))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=70)
+    result = buf.getvalue()
+    logger.info(f"Page {page_num} image size: {len(result) / 1024:.0f} KB")
+    return result
 
 
 def get_page_count(pdf_bytes: bytes) -> int:
