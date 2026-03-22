@@ -133,11 +133,13 @@ async def analyze_blood_test(pdf_bytes: bytes) -> AnalysisResult:
         ocr_parts = []
         for i in range(max_pages):
             logger.info(f"OCR processing page {i + 1}/{max_pages}...")
-            img = render_page_as_image(pdf_bytes, i, dpi=150)
+            img = render_page_as_image(pdf_bytes, i)
             page_text = await ocr_page_image(img)
             if page_text:
                 ocr_parts.append(page_text)
             del img  # Free memory immediately
+            if i < max_pages - 1:
+                await asyncio.sleep(5)  # Pause between pages to avoid rate limits
         raw_text = "\n".join(ocr_parts)
 
     if not raw_text.strip():
