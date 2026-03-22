@@ -33,6 +33,7 @@ def render_page_as_image(pdf_bytes: bytes, page_num: int, dpi: int = 150) -> byt
     page = doc[page_num]
     pix = page.get_pixmap(matrix=matrix)
     img = pix.tobytes("png")
+    logger.info(f"Page {page_num} image size: {len(img) / 1024:.0f} KB")
     doc.close()
     return img
 

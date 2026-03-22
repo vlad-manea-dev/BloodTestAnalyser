@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Configurable Groq settings
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-GROQ_VISION_MODEL = os.getenv("GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GROQ_TIMEOUT = float(os.getenv("GROQ_TIMEOUT", "60.0"))
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -114,41 +114,32 @@ async def analyze_biomarkers(biomarkers_for_analysis: list[dict]) -> dict:
 
 
 async def ocr_page_image(image_bytes: bytes) -> str:
-    """Use Groq vision model to OCR a single page image."""
+    """Use Gemini vision to OCR a single page image."""
     b64 = base64.b64encode(image_bytes).decode("utf-8")
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json",
-    }
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
     payload = {
-        "model": GROQ_VISION_MODEL,
-        "messages": [
+        "contents": [
             {
-                "role": "user",
-                "content": [
+                "parts": [
+                    {"text": "Extract ALL text from this blood test report image exactly as it appears. Include all biomarker names, values, units, and reference ranges. Return only the extracted text, nothing else."},
                     {
-                        "type": "text",
-                        "text": "Extract ALL text from this blood test report image exactly as it appears. Include all biomarker names, values, units, and reference ranges. Return only the extracted text, nothing else.",
+                        "inline_data": {
+                            "mime_type": "image/png",
+                            "data": b64,
+                        }
                     },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{b64}",
-                        },
-                    },
-                ],
+                ]
             }
-        ],
-        "max_tokens": 4096,
+        ]
     }
 
     async with httpx.AsyncClient(timeout=GROQ_TIMEOUT) as client:
         try:
-            response = await client.post(GROQ_API_URL, json=payload, headers=headers)
+            response = await client.post(url, json=payload)
             response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"]
+            return response.json()["candidates"][0]["content"]["parts"][0]["text"]
         except Exception as e:
-            logger.error(f"Vision OCR failed for page: {e}")
+            logger.error(f"Gemini Vision OCR failed for page: {e}")
             return ""
 
 
